@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>SNS掲示板</title>
+</head>
+<body>
+    <h1>みんなの掲示板</h1>
+
+    <form th:action="@{/post}" method="post">
+        <input type="text" name="content" placeholder="今何してる？" required>
+        <button type ="submit">投稿する</button>
+    </form>
+
+    <hr>
+
+    <ul>
+        <li th:each="post : ${posts}">
+            <span th:text="${post.content}">投稿内容</span>
+        </li>
+    </ul>
+</body>
+</html>
