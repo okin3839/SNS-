@@ -5,7 +5,7 @@
     <title>SNS掲示板</title>
 </head>
 <body>
-    <h1>みんなの掲示板</h1>
+    <h1>掲示板</h1>
 
     <form th:action="@{/post}" method="post">
         <input type="text" name="content" placeholder="今何してる？" required>
@@ -17,6 +17,7 @@
     <ul>
         <li th:each="post : ${posts}">
             <span th:text="${post.content}">投稿内容</span>
+            <small th:text="${#temporals.format(post.createdAt, 'yyyy/MM/dd HH:mm')}"></small>
         </li>
     </ul>
 </body>
