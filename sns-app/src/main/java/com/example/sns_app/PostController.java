@@ -26,4 +26,10 @@ public class PostController {
         return "redirect:/";
     }
 
+    @PostMapping("/delete")
+    public String deletePost(Long id){
+        postRepository.deleteById(id);
+        return "redirect:/";
+    }
+
 }

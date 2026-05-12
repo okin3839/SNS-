@@ -18,6 +18,11 @@
         <li th:each="post : ${posts}">
             <span th:text="${post.content}">投稿内容</span>
             <small th:text="${#temporals.format(post.createdAt, 'yyyy/MM/dd HH:mm')}"></small>
+
+            <form th:action="@{/delete}" method="post" style="display:inline;">
+                <input type="hidden" name="id" th:value="${post.id}">
+                <button type="submit" onclick="return confirm('本当に削除しますか？')">削除</button>
+            </form>
         </li>
     </ul>
 </body>
