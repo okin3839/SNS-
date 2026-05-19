@@ -8,6 +8,7 @@
     <h1>掲示板</h1>
 
     <form th:action="@{/post}" method="post">
+        <input type="text" name="username" placeholder="ニックネーム" required>
         <input type="text" name="content" placeholder="今何してる？" required>
         <button type ="submit">投稿する</button>
     </form>
@@ -16,6 +17,8 @@
 
     <ul>
         <li th:each="post : ${posts}">
+            <strong th:text="${post.username}">ユーザー名</strong>:
+
             <span th:text="${post.content}">投稿内容</span>
             <small th:text="${#temporals.format(post.createdAt, 'yyyy/MM/dd HH:mm')}"></small>
 

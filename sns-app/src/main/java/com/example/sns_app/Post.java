@@ -13,7 +13,7 @@ public class Post {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    private String username;
     private String content;
 
     public Long getId(){
@@ -27,6 +27,13 @@ public class Post {
     }
     public void setContent(String content){
         this.content = content;
+    }
+
+    public String getUsername(){
+        return username;
+    }
+    public void setUsername(String username){
+        this.username = username;
     }
 
     private LocalDateTime createdAt;

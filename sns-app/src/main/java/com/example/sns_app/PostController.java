@@ -14,14 +14,12 @@ public class PostController {
 
     @GetMapping
     public String index(Model model){
-        model.addAttribute("posts",postRepository.findAll());
+        model.addAttribute("posts",postRepository.findAllByOrderByCreatedAtDesc());
         return "index";
     }
 
     @PostMapping("/post")
-    public String addPost(String content){
-        Post post = new Post();
-        post.setContent(content);
+    public String addPost(Post post){
         postRepository.save(post);
         return "redirect:/";
     }
