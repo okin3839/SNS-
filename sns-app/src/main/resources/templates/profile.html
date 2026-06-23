@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>プロフィール設定 - SNS掲示板</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 shadow-sm">
+    <div class="container" style="max-width: 600px;">
+        <a class="navbar-brand fw-bold" href="/">SNS掲示板</a>
+        <div class="d-flex align-items-center">
+            <a href="/" class="btn btn-sm btn-outline-light me-3">タイムラインに戻る</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container" style="max-width: 500px;">
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <h4 class="card-title text-center mb-4 fw-bold">プロフィール設定</h4>
+
+            <div th:if="${param.success}" class="alert alert-success py-2" role="alert">
+                更新しました
+            </div>
+
+            <div th:if="${param.sizeError}" class="alert alert-danger py-2" role="alert">
+                画像サイズが大きすぎます。10MB以下のファイルを選択してください。
+            </div>
+
+            <div th:if="${param.duplicateError}" class="alert alert-danger py-2" role="alert">
+                そのニックネームは既に他のユーザーに使われています。別の名前を入力してください。
+            </div>
+
+            <div th:if="${param.currentPasswordError}" class="alert alert-danger py-2" role="alert">
+                現在のパスワードが間違っています。
+            </div>
+
+            <div th:if="${param.passwordMatchError}" class="alert alert-danger py-2" role="alert">
+                新しいパスワードと確認用パスワードが一致しません。もう一度入力してください。
+            </div>
+
+            <form th:action="@{/profile/update}" method="post" enctype="multipart/form-data">
+
+            <form th:action="@{/profile/update}" method="post" enctype="multipart/form-data">
+
+                <div class="mb-4 text-center">
+                    <img th:if="${user.profileImage != null}"
+                         th:src="@{/uploads/{filename}(filename=${user.profileImage})}"
+                         class="rounded-circle mb-2 shadow-sm"
+                         style="width: 100px; height: 100px; object-fit: cover;"
+                         alt="プロフィール画像">
+
+                    <img th:if="${user.profileImage == null}"
+                         th:src="@{static//uploads/no-image.png}"
+                         class="rounded-circle mb-2 shadow-sm bg-white"
+                         style="width: 100px; height: 100px; object-fit: cover;"
+                         alt="No Image">
+
+                    <input class="form-control form-control-sm mt-2" type="file" name="iconFile" accept="image/*">
+                    <div class="form-text small">JPEGまたはPNG画像を選択してください</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">ニックネーム</label>
+                    <input type="text" name="username" class="form-control bg-light" th:value="${user.username}" required>
+                </div>
+
+                <hr class="my-4">
+                <h6 class="fw-bold mb-3">パスワード変更（変更する場合のみ入力）</h6>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">現在のパスワード</label>
+                    <input type="password" name="currentPassword" class="form-control bg-light">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">新しいパスワード</label>
+                    <input type="password" name="newPassword" class="form-control bg-light">
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-muted small fw-bold">新しいパスワード（確認用）</label>
+                    <input type="password" name="confirmPassword" class="form-control bg-light" placeholder="もう一度入力してください">
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 fw-bold rounded-pill">変更を保存する</button>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
