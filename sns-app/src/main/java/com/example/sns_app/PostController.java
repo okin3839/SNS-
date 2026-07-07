@@ -1,6 +1,8 @@
 package com.example.sns_app;
 
 import java.security.Principal;
+
+import com.example.sns_app.repository.TopicRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,11 +18,16 @@ public class PostController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private TopicRepository topicRepository;
+
     @GetMapping
     public String index(Model model,Principal principal){
-        model.addAttribute("posts",postRepository.findAllByOrderByCreatedAtDesc());
-        User user = userRepository.findByUsername(principal.getName()).get();
-        model.addAttribute("user", user);
+        model.addAttribute("topics",topicRepository.findAll());
+        if(principal!=null){
+            User user = userRepository.findByUsername(principal.getName()).get();
+            model.addAttribute("user", user);
+        }
         return "index";
     }
 

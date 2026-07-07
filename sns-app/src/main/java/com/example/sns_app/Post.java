@@ -1,5 +1,6 @@
 package com.example.sns_app;
 
+import com.example.sns_app.entity.Topic;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -19,6 +20,10 @@ public class Post {
     @ManyToOne
     @JoinColumn(name="user_id")
     private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "topic_id")
+    private Topic topic;
 
     private String content;
     private LocalDateTime createdAt;
@@ -41,6 +46,8 @@ public class Post {
     public void setContent(String content){
         this.content = content;
     }
+    public Topic getTopic(){return topic;}
+    public void setTopic(Topic topic){this.topic=topic;}
 
 
 
