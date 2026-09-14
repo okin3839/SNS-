@@ -1,5 +1,7 @@
 package com.example.sns_app;
 
+import com.example.sns_app.entity.Topic;
+import com.example.sns_app.repository.TopicRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -14,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.UUID;
 import java.security.Principal;
 import jakarta.servlet.ServletException;
@@ -27,6 +30,12 @@ public class UserController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private TopicRepository topicRepository;
+
+    @Autowired
+    private PostRepository postRepository;
 
     @GetMapping("/register")
     public String showRegisterForm(Model model){
@@ -58,6 +67,17 @@ public class UserController {
     public String showProfile(Principal principal, Model model) {
         User user = userRepository.findByUsername(principal.getName()).get();
         model.addAttribute("user", user);
+
+        List<Topic> myTopics = topicRepository.findByUserOrderByCreatedAtDesc(user);
+        List<Post> myPosts = postRepository.findByUserOrderByCreatedAtDesc(user);
+
+        // 🌟ここを追加：自分がいいねしたスレッド一覧を取得
+        List<Topic> likedTopics = topicRepository.findByLikedByUsersContainingOrderByCreatedAtDesc(user);
+
+        model.addAttribute("myTopics", myTopics);
+        model.addAttribute("myPosts", myPosts);
+        model.addAttribute("likedTopics", likedTopics); // 🌟ここを追加
+
         return "profile";
     }
 
@@ -69,6 +89,7 @@ public class UserController {
             @RequestParam(value = "confirmPassword", required = false) String confirmPassword,
             @RequestParam(value = "currentPassword", required = false) String currentPassword,
             @RequestParam("iconFile") MultipartFile iconFile,
+            @RequestParam(value = "bio", required = false) String bio, // 🌟ここを追加しました！
             HttpServletRequest request) {
 
         User user = userRepository.findByUsername(principal.getName()).get();
@@ -117,6 +138,10 @@ public class UserController {
                 return "redirect:/profile?error";
             }
         }
+
+        // 🌟自己紹介文をセット
+        user.setBio(bio);
+
         userRepository.save(user);
 
         // 4. ログインID（名前）かパスワードを変更した場合は、強制的にログアウトさせる

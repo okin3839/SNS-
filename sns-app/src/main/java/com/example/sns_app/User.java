@@ -22,6 +22,12 @@ public class User {
     @Column(name="profile_image")
     private String profileImage;
 
+    @Column(length = 500)
+    private String bio;
+
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
+
     public Long getId(){
         return id;
     }

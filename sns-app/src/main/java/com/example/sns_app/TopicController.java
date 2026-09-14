@@ -8,6 +8,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 
 @Controller
 public class TopicController {
@@ -109,5 +110,33 @@ public class TopicController {
 
         // 削除した後はトップ画面（一覧）に戻る
         return "redirect:/";
+    }
+
+    // 【追加】他人のプロフィール詳細画面を表示する
+    @GetMapping("/user/{id}")
+    public String showUserProfile(@PathVariable Long id, Model model, Principal principal) {
+
+        // ① 見たい対象のユーザー情報を取得
+        User targetUser = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("無効なユーザーID:" + id));
+
+        // ② そのユーザーが立てたスレッド一覧を取得
+        List<Topic> userTopics = topicRepository.findByUserOrderByCreatedAtDesc(targetUser);
+
+        // ③ そのユーザーが書き込んだ返信一覧を取得
+        List<Post> userPosts = postRepository.findByUserOrderByCreatedAtDesc(targetUser);
+
+        // ④ 画面に渡す
+        model.addAttribute("targetUser", targetUser);
+        model.addAttribute("userTopics", userTopics);
+        model.addAttribute("userPosts", userPosts);
+
+        // いつも通り、現在ログインしている人（画面を見ている本人）の情報も渡す
+        if (principal != null) {
+            User currentUser = userRepository.findByUsername(principal.getName()).get();
+            model.addAttribute("user", currentUser);
+        }
+
+        return "user_profile"; // user_profile.html を表示
     }
 }

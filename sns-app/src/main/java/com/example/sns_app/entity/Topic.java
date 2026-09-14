@@ -4,7 +4,9 @@ import com.example.sns_app.Post;
 import com.example.sns_app.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 public class Topic {
@@ -36,7 +38,13 @@ public class Topic {
     // 作成日時
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    // ↓↓↓ ここから下は IntelliJの機能で Getter と Setter を生成してください ↓↓↓
+    @ManyToMany
+    @JoinTable(
+            name = "topic_likes", // データベース内に自動で作られる中間テーブルの名前
+            joinColumns = @JoinColumn(name = "topic_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private Set<User> likedByUsers = new HashSet<>();
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -52,4 +60,11 @@ public class Topic {
     public void setPosts(List<Post> posts) { this.posts = posts; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Set<User> getLikedByUsers() {
+        return likedByUsers;
+    }
+
+    public void setLikedByUsers(Set<User> likedByUsers) {
+        this.likedByUsers = likedByUsers;
+    }
 }

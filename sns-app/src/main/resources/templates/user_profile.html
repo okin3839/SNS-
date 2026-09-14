@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${targetUser.username} + 'のプロフィール - SNS掲示板'"></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-primary shadow-sm mb-4">
+    <div class="container" style="max-width: 800px;">
+        <a class="navbar-brand fw-bold" href="/">SNS掲示板</a>
+        <a href="/" class="btn btn-sm btn-outline-light fw-bold">一覧に戻る</a>
+    </div>
+</nav>
+
+<div class="container mx-auto" style="max-width: 800px; padding-bottom: 100px;">
+
+    <!-- ① プロフィール基本情報 -->
+    <div class="card shadow-sm border-0 mb-4 bg-white p-4 text-center">
+        <img th:if="${targetUser.profileImage != null}" th:src="@{/uploads/{f}(f=${targetUser.profileImage})}" class="rounded-circle mx-auto mb-3 shadow-sm" style="width: 100px; height: 100px; object-fit: cover;">
+        <img th:if="${targetUser.profileImage == null}" th:src="@{/default-icon.png}" class="rounded-circle mx-auto mb-3 shadow-sm" style="width: 100px; height: 100px; object-fit: cover;">
+
+        <h3 class="fw-bold mb-2" th:text="${targetUser.username}">ユーザー名</h3>
+
+        <div class="bg-light p-3 rounded text-start mx-auto mt-3" style="max-width: 600px;">
+            <p class="m-0 text-secondary" style="white-space: pre-wrap;" th:text="${targetUser.bio != null ? targetUser.bio : '自己紹介はまだありません。'}"></p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- ② 立てたスレッド一覧（左半分） -->
+        <div class="col-md-6 mb-4">
+            <h5 class="fw-bold mb-3 border-bottom pb-2">立てたスレッド</h5>
+            <div th:if="${userTopics.isEmpty()}" class="text-muted small">まだスレッドを立てていません。</div>
+
+            <div class="list-group shadow-sm">
+                <a th:each="topic : ${userTopics}" th:href="@{/topic/{id}(id=${topic.id})}" class="list-group-item list-group-item-action p-3">
+                    <div class="d-flex w-100 justify-content-between mb-1">
+                        <small class="badge bg-primary" th:text="${topic.label}"></small>
+                        <small class="text-muted" th:text="${#temporals.format(topic.createdAt, 'MM/dd')}"></small>
+                    </div>
+                    <h6 class="mb-1 fw-bold text-dark" th:text="${topic.title}"></h6>
+                </a>
+            </div>
+        </div>
+
+        <!-- ③ 返信履歴一覧（右半分） -->
+        <div class="col-md-6 mb-4">
+            <h5 class="fw-bold mb-3 border-bottom pb-2">返信履歴</h5>
+            <div th:if="${userPosts.isEmpty()}" class="text-muted small">まだ返信していません。</div>
+
+            <div class="list-group shadow-sm">
+                <a th:each="post : ${userPosts}" th:href="@{/topic/{id}(id=${post.topic.id})}" class="list-group-item list-group-item-action p-3">
+                    <div class="d-flex w-100 justify-content-between mb-1">
+                        <small class="text-primary fw-bold">Re: <span th:text="${post.topic.title}"></span></small>
+                        <small class="text-muted" th:text="${#temporals.format(post.createdAt, 'MM/dd')}"></small>
+                    </div>
+                    <p class="mb-1 small text-secondary text-truncate" th:text="${post.content}"></p>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

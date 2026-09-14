@@ -7,8 +7,9 @@
 </head>
 <body class="bg-light">
 
+<!-- ナビゲーションバー（全体の幅に合わせて 800px に拡張しました） -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 shadow-sm">
-    <div class="container" style="max-width: 600px;">
+    <div class="container" style="max-width: 800px;">
         <a class="navbar-brand fw-bold" href="/">SNS掲示板</a>
         <div class="d-flex align-items-center">
             <a href="/" class="btn btn-sm btn-outline-light me-3">タイムラインに戻る</a>
@@ -16,8 +17,11 @@
     </div>
 </nav>
 
-<div class="container" style="max-width: 500px;">
-    <div class="card shadow-sm border-0">
+<!-- メインコンテナ（履歴を2列で綺麗に見せるため、最大幅を 800px にしています） -->
+<div class="container pb-5" style="max-width: 800px;">
+
+    <!-- プロフィール設定フォーム（ここは元のデザイン通り 500px で中央寄せにしています） -->
+    <div class="card shadow-sm border-0 mx-auto mb-5" style="max-width: 500px;">
         <div class="card-body p-4">
             <h4 class="card-title text-center mb-4 fw-bold">プロフィール設定</h4>
 
@@ -43,8 +47,6 @@
 
             <form th:action="@{/profile/update}" method="post" enctype="multipart/form-data">
 
-            <form th:action="@{/profile/update}" method="post" enctype="multipart/form-data">
-
                 <div class="mb-4 text-center">
                     <img th:if="${user.profileImage != null}"
                          th:src="@{/uploads/{filename}(filename=${user.profileImage})}"
@@ -65,6 +67,12 @@
                 <div class="mb-3">
                     <label class="form-label text-muted small fw-bold">ニックネーム</label>
                     <input type="text" name="username" class="form-control bg-light" th:value="${user.username}" required>
+                </div>
+
+                <!-- 🌟自己紹介の入力欄 -->
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">自己紹介</label>
+                    <textarea name="bio" class="form-control bg-light" rows="3" placeholder="自己紹介を入力してください..." th:text="${user.bio}"></textarea>
                 </div>
 
                 <hr class="my-4">
@@ -90,6 +98,56 @@
 
         </div>
     </div>
+    <!-- プロフィール設定フォームここまで -->
+
+    <!-- 🌟投稿履歴エリア（3列に変更） -->
+    <div class="row text-start">
+
+        <!-- 1列目：立てたスレッド一覧 -->
+        <div class="col-md-4 mb-4">
+            <h6 class="fw-bold mb-3 border-bottom pb-2">立てたスレッド</h6>
+            <div th:if="${myTopics == null or myTopics.isEmpty()}" class="text-muted small">まだありません。</div>
+            <div class="list-group shadow-sm">
+                <a th:each="topic : ${myTopics}" th:href="@{/topic/{id}(id=${topic.id})}" class="list-group-item list-group-item-action p-3 border-0 border-bottom">
+                    <small class="badge bg-primary mb-1" th:text="${topic.label}"></small>
+                    <h6 class="mb-1 fw-bold text-dark" th:text="${topic.title}"></h6>
+                </a>
+            </div>
+        </div>
+
+        <!-- 2列目：返信履歴一覧 -->
+        <div class="col-md-4 mb-4">
+            <h6 class="fw-bold mb-3 border-bottom pb-2">返信履歴</h6>
+            <div th:if="${myPosts == null or myPosts.isEmpty()}" class="text-muted small">まだありません。</div>
+            <div class="list-group shadow-sm">
+                <!-- 🌟修正： th:if="${post.topic != null}" をここに追加しました -->
+                <a th:each="post : ${myPosts}" th:if="${post.topic != null}" th:href="@{/topic/{id}(id=${post.topic.id})}" class="list-group-item list-group-item-action p-3 border-0 border-bottom">
+                    <small class="text-primary fw-bold">Re: <span th:text="${post.topic.title}"></span></small>
+                    <p class="mb-0 mt-1 small text-secondary text-truncate" th:text="${post.content}"></p>
+                </a>
+            </div>
+        </div>
+
+        <!-- 3列目：いいねしたスレッド一覧 -->
+        <div class="col-md-4 mb-4">
+            <h6 class="fw-bold mb-3 border-bottom pb-2">いいねしたスレッド</h6>
+            <div th:if="${likedTopics == null or likedTopics.isEmpty()}" class="text-muted small">まだありません。</div>
+            <div class="list-group shadow-sm">
+                <a th:each="topic : ${likedTopics}" th:href="@{/topic/{id}(id=${topic.id})}" class="list-group-item list-group-item-action p-3 border-0 border-bottom bg-light">
+                    <div class="d-flex w-100 justify-content-between mb-1">
+                        <small class="fw-bold text-dark" th:text="${topic.title}"></small>
+                    </div>
+                    <small class="text-muted d-flex align-items-center">
+                        <img th:if="${topic.user.profileImage != null}" th:src="@{/uploads/{filename}(filename=${topic.user.profileImage})}" class="rounded-circle me-1" style="width: 16px; height: 16px; object-fit: cover;">
+                        <span th:text="${topic.user.username}"></span>
+                    </small>
+                </a>
+            </div>
+        </div>
+
+    </div>
+    <!-- 投稿履歴エリアここまで -->
+
 </div>
 
 </body>
