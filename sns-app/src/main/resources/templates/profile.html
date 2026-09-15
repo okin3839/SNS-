@@ -2,12 +2,14 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <!-- ページタイトル -->
     <title>プロフィール設定 - SNS掲示板</title>
+    <!-- Bootstrap 5 CSS の読み込み -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 
-<!-- ナビゲーションバー（全体の幅に合わせて 800px に拡張しました） -->
+<!-- 上部ナビゲーションバー -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 shadow-sm">
     <div class="container" style="max-width: 800px;">
         <a class="navbar-brand fw-bold" href="/">SNS掲示板</a>
@@ -17,14 +19,15 @@
     </div>
 </nav>
 
-<!-- メインコンテナ（履歴を2列で綺麗に見せるため、最大幅を 800px にしています） -->
+<!-- メインコンテンツ領域（設定フォームと履歴一覧） -->
 <div class="container pb-5" style="max-width: 800px;">
 
-    <!-- プロフィール設定フォーム（ここは元のデザイン通り 500px で中央寄せにしています） -->
+    <!-- ① プロフィール設定フォーム領域 -->
     <div class="card shadow-sm border-0 mx-auto mb-5" style="max-width: 500px;">
         <div class="card-body p-4">
             <h4 class="card-title text-center mb-4 fw-bold">プロフィール設定</h4>
 
+            <!-- 更新完了・エラー通知アラート表示 -->
             <div th:if="${param.success}" class="alert alert-success py-2" role="alert">
                 更新しました
             </div>
@@ -45,15 +48,19 @@
                 新しいパスワードと確認用パスワードが一致しません。もう一度入力してください。
             </div>
 
+            <!-- プロフィール更新フォーム（ファイル送信のため enctype="multipart/form-data" を指定） -->
             <form th:action="@{/profile/update}" method="post" enctype="multipart/form-data">
 
+                <!-- プロフィール画像選択領域 -->
                 <div class="mb-4 text-center">
+                    <!-- 設定済みプロフィールの表示 -->
                     <img th:if="${user.profileImage != null}"
                          th:src="@{/uploads/{filename}(filename=${user.profileImage})}"
                          class="rounded-circle mb-2 shadow-sm"
                          style="width: 100px; height: 100px; object-fit: cover;"
                          alt="プロフィール画像">
 
+                    <!-- 画像未設定時のデフォルト表示 -->
                     <img th:if="${user.profileImage == null}"
                          th:src="@{static//uploads/no-image.png}"
                          class="rounded-circle mb-2 shadow-sm bg-white"
@@ -64,12 +71,13 @@
                     <div class="form-text small">JPEGまたはPNG画像を選択してください</div>
                 </div>
 
+                <!-- ニックネーム入力欄 -->
                 <div class="mb-3">
                     <label class="form-label text-muted small fw-bold">ニックネーム</label>
                     <input type="text" name="username" class="form-control bg-light" th:value="${user.username}" required>
                 </div>
 
-                <!-- 🌟自己紹介の入力欄 -->
+                <!-- 自己紹介文入力欄 -->
                 <div class="mb-3">
                     <label class="form-label text-muted small fw-bold">自己紹介</label>
                     <textarea name="bio" class="form-control bg-light" rows="3" placeholder="自己紹介を入力してください..." th:text="${user.bio}"></textarea>
@@ -78,6 +86,7 @@
                 <hr class="my-4">
                 <h6 class="fw-bold mb-3">パスワード変更（変更する場合のみ入力）</h6>
 
+                <!-- パスワード変更入力欄エリア -->
                 <div class="mb-3">
                     <label class="form-label text-muted small fw-bold">現在のパスワード</label>
                     <input type="password" name="currentPassword" class="form-control bg-light">
@@ -93,17 +102,17 @@
                     <input type="password" name="confirmPassword" class="form-control bg-light" placeholder="もう一度入力してください">
                 </div>
 
+                <!-- 更新実行ボタン -->
                 <button type="submit" class="btn btn-primary w-100 fw-bold rounded-pill">変更を保存する</button>
             </form>
 
         </div>
     </div>
-    <!-- プロフィール設定フォームここまで -->
 
-    <!-- 🌟投稿履歴エリア（3列に変更） -->
+    <!-- ② ユーザーの投稿・アクティビティ履歴エリア（3カラムレイアウト） -->
     <div class="row text-start">
 
-        <!-- 1列目：立てたスレッド一覧 -->
+        <!-- 1列目：立てたスレッド（トピック）一覧 -->
         <div class="col-md-4 mb-4">
             <h6 class="fw-bold mb-3 border-bottom pb-2">立てたスレッド</h6>
             <div th:if="${myTopics == null or myTopics.isEmpty()}" class="text-muted small">まだありません。</div>
@@ -115,12 +124,12 @@
             </div>
         </div>
 
-        <!-- 2列目：返信履歴一覧 -->
+        <!-- 2列目：返信（コメント）履歴一覧 -->
         <div class="col-md-4 mb-4">
             <h6 class="fw-bold mb-3 border-bottom pb-2">返信履歴</h6>
             <div th:if="${myPosts == null or myPosts.isEmpty()}" class="text-muted small">まだありません。</div>
             <div class="list-group shadow-sm">
-                <!-- 🌟修正： th:if="${post.topic != null}" をここに追加しました -->
+                <!-- 親スレッドが存在する場合のみ表示（NullPointerException防止） -->
                 <a th:each="post : ${myPosts}" th:if="${post.topic != null}" th:href="@{/topic/{id}(id=${post.topic.id})}" class="list-group-item list-group-item-action p-3 border-0 border-bottom">
                     <small class="text-primary fw-bold">Re: <span th:text="${post.topic.title}"></span></small>
                     <p class="mb-0 mt-1 small text-secondary text-truncate" th:text="${post.content}"></p>
@@ -138,6 +147,7 @@
                         <small class="fw-bold text-dark" th:text="${topic.title}"></small>
                     </div>
                     <small class="text-muted d-flex align-items-center">
+                        <!-- スレッド作成者のアイコンとユーザー名 -->
                         <img th:if="${topic.user.profileImage != null}" th:src="@{/uploads/{filename}(filename=${topic.user.profileImage})}" class="rounded-circle me-1" style="width: 16px; height: 16px; object-fit: cover;">
                         <span th:text="${topic.user.username}"></span>
                     </small>
@@ -146,7 +156,6 @@
         </div>
 
     </div>
-    <!-- 投稿履歴エリアここまで -->
 
 </div>
 

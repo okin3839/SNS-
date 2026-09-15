@@ -15,11 +15,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
-
-// 🌟追加したimport
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.PathVariable;
+import jakarta.servlet.http.HttpServletRequest;
 
+/**
+ * 掲示板のトップページ表示、返信投稿、投稿削除、いいね切替等を制御するWebコントローラークラス
+ */
 @Controller
 public class PostController {
 
@@ -32,6 +33,18 @@ public class PostController {
     @Autowired
     private TopicRepository topicRepository;
 
+    /**
+     * トップページの表示および一覧の検索・ページネーション処理を行います。
+     * JavaScriptからのAJAXリクエスト（無限スクロール等）の場合は部分テンプレート（フラグメント）のみを返却します。
+     *
+     * @param model 画面へ渡す属性を保持するモデル
+     * @param principal ログイン中のユーザー情報
+     * @param keyword 検索キーワード（タイトル部分一致用）
+     * @param label カテゴリラベル（絞り込み用）
+     * @param pageable ページネーション設定（デフォルト: 1ページ当たり10件）
+     * @param requestedWith HTTPリクエストヘッダー（AJAX判定用: X-Requested-With）
+     * @return 遷移先ビュー名（通常時は "index"、AJAX時は "index :: topicList"）
+     */
     @GetMapping("/")
     public String index(Model model, Principal principal,
                         @RequestParam(name = "keyword", required = false) String keyword,
@@ -41,7 +54,7 @@ public class PostController {
 
         Page<Topic> topicPage;
 
-        // 検索条件によってデータベースからのデータの取り出し方を変える
+        // 検索条件（キーワード・ラベル）に応じてデータベースからの取得処理を分岐
         if (keyword != null && !keyword.isEmpty()) {
             topicPage = topicRepository.findByTitleContainingOrderByCreatedAtDesc(keyword, pageable);
         } else if (label != null && !label.isEmpty()) {
@@ -50,63 +63,85 @@ public class PostController {
             topicPage = topicRepository.findAllByOrderByCreatedAtDesc(pageable);
         }
 
-        // 画面に渡すデータをセット
-        model.addAttribute("topics", topicPage.getContent()); // 現在のページのデータ（最大10件）
-        model.addAttribute("hasNext", topicPage.hasNext());   // 次のページがあるかどうか
-        model.addAttribute("currentPage", topicPage.getNumber()); // 現在のページ番号
-        model.addAttribute("keyword", keyword);
-        model.addAttribute("label", label);
+        // 画面に渡すデータをモデルにセット
+        model.addAttribute("topics", topicPage.getContent());     // 現在ページのデータリスト（最大10件）
+        model.addAttribute("hasNext", topicPage.hasNext());       // 次ページの存在判定フラグ
+        model.addAttribute("currentPage", topicPage.getNumber()); // 現在のページ番号（0始まり）
+        model.addAttribute("keyword", keyword);                   // 検索キーワードの保持
+        model.addAttribute("label", label);                       // 選択されたラベルの保持
 
+        // ログイン中の場合、ログインユーザー情報を取得してセット
         if (principal != null) {
             User user = userRepository.findByUsername(principal.getName()).get();
             model.addAttribute("user", user);
         }
 
-        // 🌟ここが無限スクロールの肝！
-        // JavaScriptからのリクエストだった場合、「index.html」の中の「topicList」という部分だけを返す
+        // JavaScriptからの非同期通信（AJAX）だった場合、「index.html」内の「topicList」フラグメントのみを返却
         if ("XMLHttpRequest".equals(requestedWith)) {
             return "index :: topicList";
         }
 
-        return "index"; // 通常のアクセス時は画面全体を返す
+        // 通常アクセス時は画面全体（index.html）を返却
+        return "index";
     }
 
+    /**
+     * 返信投稿（Post）の新規登録を行います。
+     *
+     * @param post フォームから送信された投稿データ
+     * @param principal ログイン中のユーザー情報
+     * @return トップページへのリダイレクト
+     */
     @PostMapping("/post")
-    public String addPost(Post post,Principal principal){
-        User user=userRepository.findByUsername(principal.getName())
-                .orElseThrow(()->new IllegalArgumentException("ユーザーが見つかりません"));
+    public String addPost(Post post, Principal principal) {
+        User user = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new IllegalArgumentException("ユーザーが見つかりません"));
         post.setUser(user);
         postRepository.save(post);
         return "redirect:/";
     }
 
+    /**
+     * 指定されたIDの投稿を削除します。
+     *
+     * @param id 削除対象の投稿ID
+     * @return トップページへのリダイレクト
+     */
     @PostMapping("/delete")
-    public String deletePost(Long id){
+    public String deletePost(Long id) {
         postRepository.deleteById(id);
         return "redirect:/";
     }
 
-    // 🌟追加：いいねの追加・解除を行う処理
+    /**
+     * 指定されたスレッドに対する「いいね」の登録／解除を切り替えます。
+     * 処理完了後は、元の閲覧ページ（Referer）へ動的にリダイレクトします。
+     *
+     * @param id 対象スレッドのID
+     * @param principal ログイン中のユーザー情報
+     * @param request HTTPリクエストオブジェクト（Refererヘッダー参照用）
+     * @return 元の閲覧ページ（またはトップページ）へのリダイレクト
+     */
     @PostMapping("/topic/{id}/like")
     public String toggleLike(@PathVariable Long id, Principal principal, HttpServletRequest request) {
+        // 未ログインの場合はログイン画面へリダイレクト
         if (principal == null) {
-            return "redirect:/login"; // ログインしていなければログイン画面へ
+            return "redirect:/login";
         }
 
         User user = userRepository.findByUsername(principal.getName()).get();
         Topic topic = topicRepository.findById(id).orElseThrow();
 
-        // もし既にいいねリストに自分が含まれていたら、削除（いいね解除）
+        // すでに「いいね」している場合は解除、していない場合は登録
         if (topic.getLikedByUsers().contains(user)) {
             topic.getLikedByUsers().remove(user);
         } else {
-            // 含まれていなければ、追加（いいね登録）
             topic.getLikedByUsers().add(user);
         }
 
         topicRepository.save(topic);
 
-        // 「いいね」を押した元のページ（トップ画面か詳細画面か）にそのまま戻る便利な書き方
+        // ボタンを押した元のページ（トップ画面か詳細画面か）を取得して戻る
         String referer = request.getHeader("Referer");
         return "redirect:" + (referer != null ? referer : "/");
     }

@@ -10,25 +10,43 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.List;
 
+/**
+ * 掲示板（トピック）の作成・閲覧・返信・削除および他ユーザープロフィールの表示を制御するコントローラー
+ */
 @Controller
 public class TopicController {
 
+    /** トピックデータ操作用リポジトリ */
     @Autowired
     private TopicRepository topicRepository;
 
+    /** ユーザーデータ操作用リポジトリ */
     @Autowired
     private UserRepository userRepository;
 
+    /** 投稿・返信データ操作用リポジトリ */
     @Autowired
-    private PostRepository postRepository; // 追加
+    private PostRepository postRepository;
 
-    // スレッド作成画面を表示
+    /**
+     * 新規スレッド（トピック）作成画面を表示します。
+     *
+     * @return トピック作成画面のテンプレート名 ("topic_form")
+     */
     @GetMapping("/topic/new")
     public String showCreateForm() {
         return "topic_form";
     }
 
-    // 新規スレッド作成
+    /**
+     * 新規スレッド（トピック）を保存します。
+     *
+     * @param title スレッドタイトル
+     * @param label カテゴリラベル
+     * @param content 本文
+     * @param principal ログインユーザー情報
+     * @return トップページへのリダイレクト指示
+     */
     @PostMapping("/topic/create")
     public String createTopic(@RequestParam String title,
                               @RequestParam String label,
@@ -46,7 +64,14 @@ public class TopicController {
         return "redirect:/";
     }
 
-    // 【追加】スレッド詳細画面を表示する
+    /**
+     * スレッドの詳細画面（返信一覧含む）を表示します。
+     *
+     * @param id トピックID
+     * @param model 画面引き渡し用モデル
+     * @param principal ログインユーザー情報（未ログイン時はnull）
+     * @return スレッド詳細画面のテンプレート名 ("topic_detail")
+     */
     @GetMapping("/topic/{id}")
     public String showTopicDetail(@PathVariable Long id, Model model, Principal principal) {
         Topic topic = topicRepository.findById(id)
@@ -58,10 +83,17 @@ public class TopicController {
             User user = userRepository.findByUsername(principal.getName()).get();
             model.addAttribute("user", user);
         }
-        return "topic_detail"; // topic_detail.html を表示
+        return "topic_detail";
     }
 
-    // 【追加】スレッド内に返信（コメント）を投稿する
+    /**
+     * スレッドに対する返信（コメント）を投稿します。
+     *
+     * @param id トピックID
+     * @param content 返信本文
+     * @param principal ログインユーザー情報
+     * @return 該当スレッド詳細画面へのリダイレクト指示
+     */
     @PostMapping("/topic/{id}/reply")
     public String replyToTopic(@PathVariable Long id,
                                @RequestParam String content,
@@ -71,72 +103,86 @@ public class TopicController {
 
         Post post = new Post();
         post.setContent(content);
-        post.setTopic(topic); // どのスレッドへの返信かをセット
-        post.setUser(user);   // 誰が書いたかをセット
+        post.setTopic(topic);
+        post.setUser(user);
 
         postRepository.save(post);
-        return "redirect:/topic/" + id; // 再度そのスレッド詳細画面にリダイレクト
+        return "redirect:/topic/" + id;
     }
-    // 【追加】返信（コメント）を削除する
+
+    /**
+     * スレッド内の特定の返信（コメント）を削除します（作成者本人限定）。
+     *
+     * @param topicId トピックID
+     * @param postId 削除対象の返信ID
+     * @param principal ログインユーザー情報
+     * @return 該当スレッド詳細画面へのリダイレクト指示
+     */
     @PostMapping("/topic/{topicId}/post/{postId}/delete")
     public String deletePost(@PathVariable Long topicId,
                              @PathVariable Long postId,
                              Principal principal) {
 
-        // データベースから削除したい返信を探す
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("無効な返信ID:" + postId));
 
-        // 念のため、サーバー側でも「本当に本人が消そうとしているか」を確認する（セキュリティ対策）
+        // 本人確認を行い、一致する場合のみ削除を実行
         if (principal != null && post.getUser().getUsername().equals(principal.getName())) {
             postRepository.delete(post);
         }
 
-        // 削除が終わったら、元のスレッド詳細画面に戻る
         return "redirect:/topic/" + topicId;
     }
-    // 【追加】スレッド（トピック）を丸ごと削除する
+
+    /**
+     * スレッド（トピック）を丸ごと削除します（作成者本人限定）。
+     *
+     * @param id 削除対象のトピックID
+     * @param principal ログインユーザー情報
+     * @return トップページへのリダイレクト指示
+     */
     @PostMapping("/topic/{id}/delete")
     public String deleteTopic(@PathVariable Long id, Principal principal) {
-        // 削除対象のスレッドを探す
         Topic topic = topicRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("無効なトピックID:" + id));
 
-        // 作成者本人か確認（セキュリティ対策）
+        // 本人確認を行い、一致する場合のみ削除を実行（Cascade設定により紐づく返信も自動削除）
         if (principal != null && topic.getUser().getUsername().equals(principal.getName())) {
-            // cascade = CascadeType.ALL が効いているため、紐づく返信も自動で全削除されます
             topicRepository.delete(topic);
         }
 
-        // 削除した後はトップ画面（一覧）に戻る
         return "redirect:/";
     }
 
-    // 【追加】他人のプロフィール詳細画面を表示する
+    /**
+     * 他ユーザーのプロフィール詳細画面（作成スレッド・返信一覧）を表示します。
+     *
+     * @param id 閲覧対象のユーザーID
+     * @param model 画面引き渡し用モデル
+     * @param principal ログインユーザー情報（未ログイン時はnull）
+     * @return ユーザープロフィール画面のテンプレート名 ("user_profile")
+     */
     @GetMapping("/user/{id}")
     public String showUserProfile(@PathVariable Long id, Model model, Principal principal) {
 
-        // ① 見たい対象のユーザー情報を取得
+        // 閲覧対象のユーザー情報を取得
         User targetUser = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("無効なユーザーID:" + id));
 
-        // ② そのユーザーが立てたスレッド一覧を取得
+        // 対象ユーザーが作成したトピック一覧・返信一覧を取得
         List<Topic> userTopics = topicRepository.findByUserOrderByCreatedAtDesc(targetUser);
-
-        // ③ そのユーザーが書き込んだ返信一覧を取得
         List<Post> userPosts = postRepository.findByUserOrderByCreatedAtDesc(targetUser);
 
-        // ④ 画面に渡す
         model.addAttribute("targetUser", targetUser);
         model.addAttribute("userTopics", userTopics);
         model.addAttribute("userPosts", userPosts);
 
-        // いつも通り、現在ログインしている人（画面を見ている本人）の情報も渡す
+        // 画面を閲覧しているログイン本人の情報を渡す
         if (principal != null) {
             User currentUser = userRepository.findByUsername(principal.getName()).get();
             model.addAttribute("user", currentUser);
         }
 
-        return "user_profile"; // user_profile.html を表示
+        return "user_profile";
     }
 }

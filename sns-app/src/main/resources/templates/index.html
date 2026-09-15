@@ -1,25 +1,30 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>SNS掲示板</title>
+    <!-- Bootstrap 5 CSS の読み込み -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 
+<!-- 上部ナビゲーションバー -->
 <nav class="navbar navbar-dark bg-primary shadow-sm mb-4">
     <div class="container" style="max-width: 800px;">
         <a class="navbar-brand fw-bold" href="/">SNS掲示板</a>
 
         <div class="d-flex align-items-center">
+            <!-- ログインユーザーのプロフィール画面へのリンク -->
             <a th:href="@{/profile}" class="text-decoration-none text-white d-flex align-items-center me-3" style="transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
 
+                <!-- プロフィールアイコン画像 -->
                 <img th:if="${user.profileImage != null}"
                      th:src="@{/uploads/{filename}(filename=${user.profileImage})}"
                      class="rounded-circle me-2 shadow-sm bg-white"
                      style="width: 32px; height: 32px; object-fit: cover;"
                      alt="アイコン">
 
+                <!-- デフォルトアイコン画像 -->
                 <img th:if="${user.profileImage == null}"
                      th:src="@{/default-icon.png}"
                      class="rounded-circle me-2 shadow-sm bg-white"
@@ -29,6 +34,7 @@
                 <span th:text="${user.username} + ' さん'" class="fw-bold small"></span>
             </a>
 
+            <!-- ログアウトフォーム -->
             <form th:action="@{/logout}" method="post" class="m-0">
                 <button type="submit" class="btn btn-sm btn-outline-light fw-bold">ログアウト</button>
             </form>
@@ -36,13 +42,15 @@
     </div>
 </nav>
 
-<!-- 🌟ここからメインコンテンツを中央に寄せて幅を制限するコンテナ -->
+<!-- メインコンテンツ領域（最大幅 800px に制限して中央配置） -->
 <div class="container mx-auto" style="max-width: 800px; padding-bottom: 100px;">
 
-    <!-- ① 検索・絞り込みフォームを追加 -->
-    <!-- 隙間を mb-4 から mb-5 に広げて見やすくしています -->
+    <!-- ① 検索・カテゴリ絞り込みフォーム -->
     <form th:action="@{/}" method="get" class="mb-5 d-flex gap-2 shadow-sm p-3 bg-white rounded border-0">
+        <!-- キーワード検索入力欄 -->
         <input type="text" name="keyword" class="form-control bg-light border-0" placeholder="スレッドを検索..." th:value="${keyword}">
+
+        <!-- ラベル（カテゴリ）絞り込みドロップダウン -->
         <select name="label" class="form-select bg-light border-0" style="width: auto;" onchange="this.form.submit()">
             <option value="">すべてのラベル</option>
             <option value="質問・相談" th:selected="${label == '質問・相談'}">質問・相談</option>
@@ -55,43 +63,45 @@
 
     <h5 class="fw-bold mb-4">最新のスレッド</h5>
 
-    <!-- ② スレッド一覧（JavaScriptが継ぎ足せるようにフラグメント化） -->
+    <!-- ② スレッド一覧コンテナ（無限スクロール非同期読み込み用フラグメント） -->
     <div id="topic-container">
         <th:block th:fragment="topicList">
-            <!-- カード同士の隙間を mb-3 から mb-4 に広げています -->
+            <!-- スレッドカード要素 -->
             <div th:each="topic : ${topics}" class="card mb-4 shadow-sm border-0 position-relative" style="transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
 
-                <!-- 🌟 p-4を追加してカード内側の余白を大きく確保 -->
                 <div class="card-body p-4">
+                    <!-- ラベルおよび投稿日時 -->
                     <div class="d-flex align-items-center mb-3" style="position: relative; z-index: 2;">
                         <span class="badge bg-primary me-2 px-2 py-1" th:text="${topic.label}">ラベル</span>
                         <small class="text-muted" th:text="${#temporals.format(topic.createdAt, 'yyyy/MM/dd HH:mm')}">時間</small>
                     </div>
 
+                    <!-- スレッドタイトル（全体クリックでスレッド詳細画面へ遷移） -->
                     <h5 class="card-title fw-bold mb-3">
                         <a th:href="@{/topic/{id}(id=${topic.id})}" class="text-decoration-none text-dark stretched-link" th:text="${topic.title}">タイトル</a>
                     </h5>
 
-                    <!-- 🌟追加：いいねボタン（タイトルの下、ユーザー情報の上に配置） -->
+                    <!-- 非同期いいねボタン（親カードのリンクイベントと干渉しないよう z-index を指定） -->
                     <div class="d-flex align-items-center mb-3" style="position: relative; z-index: 3;">
                         <form th:action="@{/topic/{id}/like(id=${topic.id})}" method="post" class="m-0">
                             <button type="submit" class="btn btn-sm btn-light border-secondary-subtle rounded-pill px-3 shadow-sm" style="transition: all 0.2s;">
-                                <!-- 自分がいいねしているか判定して、ハートの色を変える -->
+                                <!-- 自分がいいね済みか判定してハートマークを切り替え -->
                                 <span th:text="${user != null and topic.likedByUsers.contains(user) ? '❤️' : '🤍'}"></span>
                                 <span class="ms-1 fw-bold text-dark" th:text="${topic.likedByUsers.size()}">0</span>
                             </button>
                         </form>
                     </div>
 
+                    <!-- 投稿者ユーザー情報（自分か他者かでリンクの有無を分岐） -->
                     <div class="d-flex align-items-center" style="position: relative; z-index: 2;">
-                        <!-- 🌟自分以外のユーザーの場合はリンク（aタグ）にする -->
+                        <!-- 自分以外のユーザー：ユーザー詳細プロフィール画面へのリンク -->
                         <a th:if="${user == null or topic.user.username != user.username}" th:href="@{/user/{id}(id=${topic.user.id})}" class="text-decoration-none d-flex align-items-center" style="position: relative; z-index: 3;">
                             <img th:if="${topic.user.profileImage != null}" th:src="@{/uploads/{filename}(filename=${topic.user.profileImage})}" class="rounded-circle me-2" style="width: 28px; height: 28px; object-fit: cover;">
                             <img th:if="${topic.user.profileImage == null}" th:src="@{/default-icon.png}" class="rounded-circle me-2" style="width: 28px; height: 28px; object-fit: cover;">
                             <small class="fw-bold text-dark text-decoration-underline-hover" th:text="${topic.user.username}">ユーザー名</small>
                         </a>
 
-                        <!-- 🌟自分の場合はリンクなしのただの表示（divタグ）にする -->
+                        <!-- 自分の場合：リンクなしでテキストのみ表示 -->
                         <div th:if="${user != null and topic.user.username == user.username}" class="d-flex align-items-center">
                             <img th:if="${topic.user.profileImage != null}" th:src="@{/uploads/{filename}(filename=${topic.user.profileImage})}" class="rounded-circle me-2" style="width: 28px; height: 28px; object-fit: cover;">
                             <img th:if="${topic.user.profileImage == null}" th:src="@{/default-icon.png}" class="rounded-circle me-2" style="width: 28px; height: 28px; object-fit: cover;">
@@ -101,45 +111,47 @@
                 </div>
             </div>
 
-            <!-- 🌟次のページがある場合のみ、一番下にこの「透明な目印」を描画する -->
+            <!-- 次ページが存在する場合にスクロール検知の目印（センチネル）を配置 -->
             <div th:if="${hasNext}" id="scroll-sentinel" th:data-next-page="${currentPage + 1}"></div>
         </th:block>
     </div>
 
-    <!-- 読み込み中のアニメーション（ぐるぐる） -->
+    <!-- 非同期読み込み中のスピナーアニメーション -->
     <div id="loading" class="text-center my-4 d-none">
         <div class="spinner-border text-primary" role="status"></div>
     </div>
 
 </div>
-<!-- 🌟メインコンテンツのコンテナ終了 -->
 
+<!-- 画面右下に固定配置される新規スレッド作成ボタン（FAB） -->
 <a href="/topic/new" class="btn btn-primary shadow-lg d-flex align-items-center justify-content-center"
    style="position: fixed; bottom: 40px; right: 40px; width: 65px; height: 65px; border-radius: 50%; z-index: 1000; text-decoration: none;">
     <span style="font-size: 35px; line-height: 1; padding-bottom: 4px;">+</span>
 </a>
 
+<!-- JavaScript 読み込み -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // スクロールを監視する最新の機能（Intersection Observer）
+
+        // 1. 無限スクロールの検知処理（Intersection Observer API）
         let observer = new IntersectionObserver(function(entries) {
             let sentinel = entries[0];
 
-            // 監視対象（一番下の目印）が画面に入ったら発動
+            // 監視対象（一番下の目印）が画面内に入った場合の処理
             if (sentinel.isIntersecting) {
                 let nextPage = sentinel.target.getAttribute('data-next-page');
                 let keyword = document.querySelector('input[name="keyword"]').value;
                 let label = document.querySelector('select[name="label"]').value;
 
-                // 二重リクエストを防ぐため、一度監視を解除して目印を消す
+                // 重複リクエスト防止のため、監視を一時解除して旧センチネル要素を削除
                 observer.unobserve(sentinel.target);
                 sentinel.target.remove();
 
-                // ローディング（ぐるぐる）を表示
+                // 読み込み中スピナーの表示
                 document.getElementById('loading').classList.remove('d-none');
 
-                // 検索条件を引き継ぎつつ、次のページをリクエスト
+                // 検索クエリ・選択中のラベルを保持して次ページを取得
                 let url = `/?page=${nextPage}`;
                 if(keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
                 if(label) url += `&label=${encodeURIComponent(label)}`;
@@ -147,11 +159,11 @@
                 fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                     .then(response => response.text())
                     .then(html => {
-                        // ローディングを隠して、取得したHTML（次の10件）を末尾に追加
+                        // 読み込み中スピナーを非表示にし、受け取ったHTMLフラグメントを追加
                         document.getElementById('loading').classList.add('d-none');
                         document.getElementById('topic-container').insertAdjacentHTML('beforeend', html);
 
-                        // 追加されたHTMLの中に新しい目印があれば、再度監視を開始する
+                        // 新しく追加された要素の中に次のセンチネルがあれば監視を再開
                         let newSentinel = document.getElementById('scroll-sentinel');
                         if (newSentinel) {
                             observer.observe(newSentinel);
@@ -160,38 +172,38 @@
             }
         });
 
-        // 最初の読み込み時に目印があれば監視開始
+        // 初回ロード時にセンチネルが存在すれば監視を開始
         let initialSentinel = document.getElementById('scroll-sentinel');
         if (initialSentinel) {
             observer.observe(initialSentinel);
         }
 
-        // 🌟追加：いいねボタンの非同期通信（画面リロードを防ぎ、スクロール位置を保持する）
+        // 2. いいねボタンの非同期通信処理（ページリロードを回避）
         document.body.addEventListener('submit', function(e) {
-            // 送信されたフォームのURLが「/like」を含んでいた場合のみ発動
+            // 対象フォームの action に '/like' が含まれている場合のみ処理
             if (e.target.action && e.target.action.includes('/like')) {
-                e.preventDefault(); // HTMLの標準機能である「画面遷移・リロード」をキャンセルする！
+                e.preventDefault(); // 通常の画面遷移（ページリロード）を差し止める
 
                 const form = e.target;
                 const button = form.querySelector('button');
-                const heartSpan = button.children[0]; // ❤️か🤍のアイコン
-                const countSpan = button.children[1]; // いいねの数字
+                const heartSpan = button.children[0]; // アイコン要素
+                const countSpan = button.children[1]; // カウント数表示要素
 
-                // Fetch APIを使って、裏側でサーバーにPOSTリクエストを送る
+                // Fetch API によりバックグラウンドで POST 送信（CSRFトークン同梱）
                 fetch(form.action, {
                     method: 'POST',
-                    body: new FormData(form) // 🌟ココを修正！フォーム内の合言葉（CSRFトークン）も一緒に送信する
+                    body: new FormData(form)
                 }).then(response => {
-                    // もし未ログインでログイン画面にリダイレクトされた場合は、本当に画面遷移させる
+                    // 未ログイン状態でログインページに転送された場合は、そのままリダイレクト実行
                     if (response.redirected && response.url.includes('/login')) {
                         window.location.href = '/login';
                         return;
                     }
 
-                    // サーバーでの処理が成功したら、画面の見た目だけを手動で切り替える
+                    // サーバー処理成功時、フロントエンドの表示のみ動的に切り替え
                     if (response.ok) {
                         let currentCount = parseInt(countSpan.textContent);
-                        if (heartSpan.textContent.trim() === '🤍') { // 🌟空白対策で.trim()を追加
+                        if (heartSpan.textContent.trim() === '🤍') {
                             heartSpan.textContent = '❤️';
                             countSpan.textContent = currentCount + 1;
                         } else {
